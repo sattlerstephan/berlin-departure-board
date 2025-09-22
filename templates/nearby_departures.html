@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nearby Departures - Berlin</title>
+    <meta http-equiv="refresh" content="30">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+        
+        :root {
+            --bg-primary: #000000;
+            --bg-secondary: #111100;
+            --bg-tertiary: #333300;
+            --text-primary: #f0ca00;
+            --text-secondary: #888888;
+            --accent: #f0ca00;
+            --border: #333300;
+            --delay-color: #ff6666;
+        }
+        
+        [data-theme="light"] {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f8f0;
+            --bg-tertiary: #e0e0cc;
+            --text-primary: #333300;
+            --text-secondary: #666600;
+            --accent: #cc9900;
+            --border: #ccccaa;
+            --delay-color: #cc3333;
+        }
+        
+        body { 
+            font-family: 'JetBrains Mono', 'Courier New', monospace; 
+            margin: 0; 
+            padding: 0;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            overflow-x: auto;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .bvg-header {
+            background-color: var(--accent);
+            color: var(--bg-primary);
+            padding: 8px 16px;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-bottom: 3px solid var(--accent);
+        }
+        
+        .filters {
+            background-color: var(--bg-secondary);
+            padding: 8px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .filter-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        
+        .filter-btn {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            padding: 2px 6px;
+            font-size: 10px;
+            cursor: pointer;
+            border-radius: 2px;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn.active {
+            background: var(--accent);
+            color: var(--bg-primary);
+        }
+        
+        .filter-btn:hover {
+            opacity: 0.8;
+        }
+        
+        .destination-section {
+            margin-bottom: 20px;
+        }
+        
+        .destination-header {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            padding: 6px 16px;
+            font-weight: 700;
+            font-size: 14px;
+            border-left: 4px solid var(--accent);
+            margin-bottom: 0;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .destination-header:hover {
+            background-color: var(--bg-secondary);
+        }
+        
+        .collapse-icon {
+            font-size: 12px;
+            transition: transform 0.3s;
+        }
+        
+        .destination-section.collapsed .collapse-icon {
+            transform: rotate(-90deg);
+        }
+        
+        .destination-content {
+            transition: max-height 0.3s ease-out, opacity 0.3s;
+            overflow: hidden;
+        }
+        
+        .destination-section.collapsed .destination-content {
+            max-height: 0;
+            opacity: 0;
+        }
+        
+        table { 
+            border-collapse: collapse; 
+            width: 100%;
+            max-width: 900px;
+            margin: 0 0 10px 0;
+            background-color: var(--bg-primary);
+            font-family: 'JetBrains Mono', monospace;
+            table-layout: fixed;
+        }
+        
+        th { 
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            font-weight: 700;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border-bottom: 2px solid var(--accent);
+        }
+        
+        th:nth-child(1) { width: 200px; text-align: left; }
+        th:nth-child(2) { width: 280px; text-align: left; }
+        th:nth-child(3) { width: 80px; text-align: center; }
+        th:nth-child(4) { width: 180px; text-align: center; }
+        th:nth-child(5) { width: 80px; text-align: center; }
+        th:nth-child(6) { width: 100px; text-align: center; }
+        
+        td { 
+            padding: 6px 12px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            border: none;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        td:nth-child(1) { width: 200px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        td:nth-child(2) { width: 280px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        td:nth-child(3) { width: 80px; text-align: center; }
+        td:nth-child(4) { width: 180px; text-align: center; font-size: 12px; }
+        td:nth-child(5) { width: 80px; text-align: center; }
+        td:nth-child(6) { width: 100px; text-align: center; font-size: 11px; font-weight: 700; }
+        
+        .station-name {
+            color: var(--text-secondary);
+            font-size: 11px;
+        }
+        
+        .urgency-now {
+            color: #ff4444;
+        }
+        
+        .urgency-soon {
+            color: #ff8800;
+        }
+        
+        .urgency-later {
+            color: #55a22a;
+        }
+        
+        .delayed {
+            color: var(--delay-color);
+        }
+        
+        .delay-info {
+            font-size: 10px;
+            color: var(--delay-color);
+        }
+        
+        .next-times {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+        
+        .blink-red {
+            width: 8px;
+            height: 8px;
+            background-color: #ff4444;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            animation: blink-urgent 1s infinite;
+        }
+        
+        .blink-orange {
+            width: 8px;
+            height: 8px;
+            background-color: #ff8800;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+            animation: blink-urgent 1s infinite;
+        }
+        
+        @keyframes blink-urgent {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+        
+        tr {
+            border-bottom: 1px solid var(--border);
+        }
+        
+        tr:nth-child(even) {
+            background-color: var(--bg-secondary);
+        }
+        
+        .line-number {
+            font-weight: 700;
+            padding: 2px 6px;
+            display: inline-block;
+            min-width: 30px;
+            text-align: center;
+            font-size: 12px;
+        }
+        
+        /* S-Bahn lines with authentic colors */
+        .line-s1 { background-color: #dd006c; color: #ffffff; }
+        .line-s2 { background-color: #009639; color: #ffffff; }
+        .line-s25 { background-color: #009639; color: #ffffff; }
+        .line-s3 { background-color: #003f7f; color: #ffffff; }
+        .line-s41 { background-color: #a23b1e; color: #ffffff; }
+        .line-s42 { background-color: #c77c00; color: #ffffff; }
+        .line-s45 { background-color: #c77c00; color: #ffffff; }
+        .line-s46 { background-color: #c77c00; color: #ffffff; }
+        .line-s47 { background-color: #a23b1e; color: #ffffff; }
+        .line-s5 { background-color: #ff6600; color: #ffffff; }
+        .line-s7 { background-color: #6f4e9c; color: #ffffff; }
+        .line-s75 { background-color: #6f4e9c; color: #ffffff; }
+        .line-s8 { background-color: #55a22a; color: #ffffff; }
+        .line-s85 { background-color: #55a22a; color: #ffffff; }
+        .line-s9 { background-color: #8b2635; color: #ffffff; }
+        
+        /* U-Bahn lines with authentic colors */
+        .line-u1 { background-color: #55a22a; color: #ffffff; }
+        .line-u2 { background-color: #da421e; color: #ffffff; }
+        .line-u3 { background-color: #16683d; color: #ffffff; }
+        .line-u4 { background-color: #f0d722; color: #000000; }
+        .line-u5 { background-color: #7e5330; color: #ffffff; }
+        .line-u6 { background-color: #8c6dab; color: #ffffff; }
+        .line-u7 { background-color: #528dba; color: #ffffff; }
+        .line-u8 { background-color: #224f86; color: #ffffff; }
+        .line-u9 { background-color: #f3791d; color: #ffffff; }
+        
+        .line-s, [class*="line-s"] {
+            border-radius: 12px;
+            width: 28px;
+            height: 20px;
+            line-height: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 0;
+        }
+        
+        .line-u, [class*="line-u"] {
+            border-radius: 0;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 0;
+        }
+        
+        .line-tram {
+            background-color: #cc0000;
+            color: #ffffff;
+            border-radius: 12px;
+            width: 28px;
+            height: 20px;
+            line-height: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 0;
+        }
+        
+        .line-bus {
+            background-color: #993399;
+            color: #ffffff;
+            border-radius: 2px;
+            padding: 2px 4px;
+            font-size: 12px;
+        }
+        
+        .line-regional {
+            background-color: #ffffff;
+            color: #000000;
+            border: 1px solid #000000;
+            border-radius: 2px;
+            padding: 2px 4px;
+            font-size: 12px;
+        }
+        
+        .header-controls {
+            float: right;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .control-link {
+            color: var(--bg-primary);
+            text-decoration: none;
+            font-size: 14px;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        
+        .control-link:hover {
+            opacity: 1;
+        }
+        
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--bg-primary);
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        
+        .theme-toggle:hover {
+            opacity: 1;
+        }
+        
+        .language-flags {
+            display: flex;
+            gap: 3px;
+            margin-right: 8px;
+        }
+        
+        .flag-link {
+            font-size: 12px;
+            text-decoration: none;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+        
+        .flag-link:hover, .flag-link.active {
+            opacity: 1;
+        }
+        
+        .bvg-footer {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 8px 16px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 500;
+            border-top: 1px solid var(--border);
+        }
+        
+        #countdown {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        
+        .no-departures {
+            color: var(--text-secondary);
+            font-style: italic;
+            padding: 10px 16px;
+            font-size: 12px;
+        }
+        
+        @media (max-width: 768px) {
+            body { font-size: 12px; }
+            .bvg-header { font-size: 16px; padding: 6px 12px; }
+            .header-controls { gap: 5px; }
+            .control-link, .flag-link { font-size: 12px; }
+            table { font-size: 11px; }
+            th, td { padding: 4px 6px; }
+            .destination-header { font-size: 12px; padding: 4px 12px; }
+            .filters { padding: 4px 8px; gap: 6px; }
+            .filter-btn { font-size: 9px; padding: 1px 4px; }
+        }
+        
+        @media (max-width: 480px) {
+            body { font-size: 11px; }
+            .bvg-header { font-size: 14px; padding: 5px 8px; }
+            table { font-size: 10px; }
+            th, td { padding: 3px 4px; }
+            .line-number { font-size: 9px; min-width: 20px; }
+            .destination-header { font-size: 11px; padding: 3px 8px; }
+            .filters { padding: 3px 6px; gap: 4px; }
+            .filter-btn { font-size: 8px; padding: 1px 3px; }
+        }
+    </style>
+</head>
+<body data-theme="dark">
+    <div class="bvg-container">
+        <div class="bvg-header">
+            {{ t('nearby_departures') }}
+            <div class="header-controls">
+                <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">🌓</button>
+                <div class="language-flags">
+                    <a href="/set_language/de" class="flag-link {% if settings.language == 'de' %}active{% endif %}" title="Deutsch">🇩🇪</a>
+                    <a href="/set_language/en" class="flag-link {% if settings.language == 'en' %}active{% endif %}" title="English">🇬🇧</a>
+                </div>
+                <a href="/stations" class="control-link" title="{{ t('station_selection') }}">🚉</a>
+                <a href="/setup" class="control-link" title="{{ t('setup') }}">⚙️</a>
+            </div>
+        </div>
+        
+        <div class="filters">
+            <div class="filter-group">
+                <button class="filter-btn active" data-type="s" onclick="toggleFilter('s')">S</button>
+                <button class="filter-btn active" data-type="u" onclick="toggleFilter('u')">U</button>
+                <button class="filter-btn active" data-type="tram" onclick="toggleFilter('tram')">T</button>
+                <button class="filter-btn active" data-type="bus" onclick="toggleFilter('bus')">B</button>
+                <button class="filter-btn active" data-type="regional" onclick="toggleFilter('regional')">R</button>
+            </div>
+        </div>
+        
+        {% for destination_area, departures in departures_by_destination.items() %}
+        <div class="destination-section" id="destination-{{ loop.index }}">
+            <div class="destination-header" onclick="toggleDestination({{ loop.index }})">
+                <div>{{ destination_area }}</div>
+                <span class="collapse-icon">▼</span>
+            </div>
+            
+            <div class="destination-content">
+                {% if departures %}
+                <table>
+                    <tr>
+                        <th>{{ t('station') }}</th>
+                        <th>{{ t('direction') }}</th>
+                        <th>{{ t('line') }}</th>
+                        <th>{{ t('next_departures') }}</th>
+                        {% if settings.show_platform %}<th>{{ t('platform') }}</th>{% endif %}
+                        <th>{{ t('leave_in') }}</th>
+                    </tr>
+                    {% for dep in departures %}
+                    <tr class="transport-{{ dep.line_type }}">
+                        <td><span class="station-name">{{ dep.station_name }}</span></td>
+                        <td>{{ dep.direction }}</td>
+                        <td><span class="line-number line-{{ dep.line_type }}">{{ dep.line }}</span></td>
+                        <td>
+                            <div>{{ dep.minutes }}{% if dep.delay %} <span class="delay-info">(+{{ dep.delay }}{{ t('min') }})</span>{% endif %}</div>
+                            {% if dep.next_times %}
+                            <div class="next-times">{{ dep.next_times }}</div>
+                            {% endif %}
+                        </td>
+                        {% if settings.show_platform %}<td>{{ dep.platform }}</td>{% endif %}
+                        <td class="urgency-{{ dep.urgency }}{% if dep.delay %} delayed{% endif %}">
+                            {% if dep.urgency == 'now' %}
+                                <span class="blink-red"></span>
+                            {% elif dep.urgency == 'soon' %}
+                                <span class="blink-orange"></span>
+                            {% endif %}
+                            {{ dep.leave_time }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </table>
+                {% else %}
+                <div class="no-departures">{{ t('no_departures_available') }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="bvg-footer">
+            {{ t('next_update') }} <span id="countdown">30</span> {{ t('seconds') }}
+        </div>
+    </div>
+
+    <script>
+        let countdown = 30;
+        const countdownElement = document.getElementById('countdown');
+        let activeFilters = new Set(['s', 'u', 'tram', 'bus', 'regional']);
+        
+        function updateCountdown() {
+            countdown--;
+            countdownElement.textContent = countdown;
+            
+            if (countdown <= 0) {
+                countdownElement.textContent = '{{ t("updating") }}';
+            }
+        }
+        
+        function toggleTheme() {
+            const body = document.body;
+            const currentTheme = body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            body.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+        
+        function toggleDestination(index) {
+            const destination = document.getElementById(`destination-${index}`);
+            destination.classList.toggle('collapsed');
+            
+            const collapsed = JSON.parse(localStorage.getItem('collapsedDestinations') || '{}');
+            const destinationName = destination.querySelector('.destination-header div').textContent.trim();
+            collapsed[destinationName] = destination.classList.contains('collapsed');
+            localStorage.setItem('collapsedDestinations', JSON.stringify(collapsed));
+        }
+        
+        function toggleFilter(type) {
+            const btn = document.querySelector(`[data-type="${type}"]`);
+            if (activeFilters.has(type)) {
+                activeFilters.delete(type);
+                btn.classList.remove('active');
+            } else {
+                activeFilters.add(type);
+                btn.classList.add('active');
+            }
+            localStorage.setItem('activeFilters', JSON.stringify([...activeFilters]));
+            applyFilters();
+        }
+        
+        function applyFilters() {
+            document.querySelectorAll('tr[class*="transport-"]').forEach(row => {
+                const transportType = [...row.classList].find(c => c.startsWith('transport-')).replace('transport-', '');
+                const typeVisible = activeFilters.has(transportType);
+                row.style.display = typeVisible ? '' : 'none';
+            });
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load theme
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            document.body.setAttribute('data-theme', savedTheme);
+            
+            // Load collapsed states
+            const collapsed = JSON.parse(localStorage.getItem('collapsedDestinations') || '{}');
+            document.querySelectorAll('.destination-section').forEach(destination => {
+                const destinationName = destination.querySelector('.destination-header div').textContent.trim();
+                if (collapsed[destinationName]) {
+                    destination.classList.add('collapsed');
+                }
+            });
+            
+            // Load filters
+            const savedFilters = JSON.parse(localStorage.getItem('activeFilters') || '["s","u","tram","bus","regional"]');
+            activeFilters = new Set(savedFilters);
+            document.querySelectorAll('[data-type]').forEach(btn => {
+                btn.classList.toggle('active', activeFilters.has(btn.dataset.type));
+            });
+            
+            applyFilters();
+        });
+        
+        setInterval(updateCountdown, 1000);
+    </script>
+</body>
+</html>

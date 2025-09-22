@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Station Selection - Nearby Departures</title>
+    <style>
+        body { 
+            font-family: 'JetBrains Mono', Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #000000;
+            color: #f0ca00;
+        }
+        
+        h1 {
+            background-color: #f0ca00;
+            color: #000000;
+            padding: 15px 20px;
+            margin: -20px -20px 20px -20px;
+            font-weight: 700;
+        }
+        
+        .station-list {
+            max-height: 500px;
+            overflow-y: auto;
+            border: 1px solid #f0ca00;
+            padding: 10px;
+            margin: 20px 0;
+        }
+        
+        .station-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #333300;
+            margin: 5px 0;
+        }
+        
+        .station-item:hover {
+            background-color: #111100;
+        }
+        
+        .station-checkbox {
+            margin-right: 10px;
+        }
+        
+        .station-info {
+            flex-grow: 1;
+        }
+        
+        .station-name {
+            font-weight: bold;
+            color: #f0ca00;
+        }
+        
+        .station-details {
+            font-size: 12px;
+            color: #888888;
+        }
+        
+        button { 
+            padding: 10px 20px; 
+            background: #f0ca00; 
+            color: #000000; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: 700;
+            margin: 10px 5px;
+        }
+        
+        button:hover {
+            background: #d4b000;
+        }
+        
+        .controls {
+            margin: 20px 0;
+        }
+        
+        .info {
+            background-color: #111100;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #f0ca00;
+        }
+    </style>
+</head>
+<body>
+    <h1>Station Selection</h1>
+    
+    <div class="info">
+        <strong>Standort:</strong> {{ settings.address }}<br>
+        <strong>Gefundene Stationen:</strong> {{ stations|length }} (max. {{ settings.max_walk_minutes }} min Gehzeit)
+    </div>
+    
+    <form method="POST" action="/update_stations">
+        <div class="controls">
+            <button type="button" onclick="selectAll()">Alle auswählen</button>
+            <button type="button" onclick="selectNone()">Alle abwählen</button>
+            <button type="button" onclick="selectClose()">Nur nahe Stationen (≤5 min)</button>
+        </div>
+        
+        <div class="station-list">
+            {% for station in stations %}
+            <div class="station-item">
+                <input type="checkbox" name="selected_stations" value="{{ station.id }}" 
+                       class="station-checkbox" id="station_{{ loop.index }}"
+                       {% if station.id in settings.selected_stations %}checked{% endif %}>
+                <label for="station_{{ loop.index }}" class="station-info">
+                    <div class="station-name">{{ station.name }}</div>
+                    <div class="station-details">
+                        {{ station.walk_time }} min Gehzeit • {{ station.distance }}m Luftlinie
+                    </div>
+                </label>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="controls">
+            <button type="submit">Ausgewählte Stationen speichern</button>
+            <a href="/" style="margin-left: 20px; color: #f0ca00;">Zurück zu Abfahrten</a>
+            <a href="/setup" style="margin-left: 20px; color: #f0ca00;">Setup</a>
+        </div>
+    </form>
+    
+    <script>
+        function selectAll() {
+            const checkboxes = document.querySelectorAll('input[name="selected_stations"]');
+            checkboxes.forEach(cb => cb.checked = true);
+        }
+        
+        function selectNone() {
+            const checkboxes = document.querySelectorAll('input[name="selected_stations"]');
+            checkboxes.forEach(cb => cb.checked = false);
+        }
+        
+        function selectClose() {
+            const checkboxes = document.querySelectorAll('input[name="selected_stations"]');
+            const labels = document.querySelectorAll('.station-details');
+            
+            checkboxes.forEach((cb, index) => {
+                const walkTime = parseInt(labels[index].textContent.match(/(\d+) min/)[1]);
+                cb.checked = walkTime <= 5;
+            });
+        }
+    </script>
+</body>
+</html>

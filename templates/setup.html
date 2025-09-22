@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup - Nearby Departures</title>
+    <style>
+        body { 
+            font-family: 'JetBrains Mono', Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #000000;
+            color: #f0ca00;
+        }
+        
+        h1 {
+            background-color: #f0ca00;
+            color: #000000;
+            padding: 15px 20px;
+            margin: -20px -20px 20px -20px;
+            font-weight: 700;
+        }
+        
+        .form-group { 
+            margin: 15px 0; 
+        }
+        
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+        }
+        
+        input, select { 
+            padding: 8px; 
+            margin: 5px 0; 
+            background-color: #333333;
+            color: #f0ca00;
+            border: 1px solid #f0ca00;
+            width: 100%;
+            max-width: 300px;
+            box-sizing: border-box;
+        }
+        
+        @media (max-width: 768px) {
+            body { margin: 15px; font-size: 14px; }
+            h1 { font-size: 20px; padding: 12px 15px; }
+            input, select { max-width: 100%; }
+            .btn-primary { width: 100%; max-width: 300px; }
+        }
+        
+        @media (max-width: 480px) {
+            body { margin: 10px; font-size: 13px; }
+            h1 { font-size: 18px; padding: 10px 12px; }
+        }
+        
+        .btn-primary { 
+            padding: 10px 20px; 
+            background: #f0ca00; 
+            color: #000000; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: 700;
+        }
+        
+        .btn-primary:hover {
+            background: #d4b000;
+        }
+        
+        .error {
+            color: #ff6666;
+            margin: 10px 0;
+        }
+        
+        .info {
+            background-color: #111100;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #f0ca00;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ t('setup') }} 
+        <div style="float: right; display: flex; gap: 5px;">
+            <a href="/set_language/de" style="font-size: 16px; text-decoration: none; opacity: {% if settings.language == 'de' %}1{% else %}0.5{% endif %};" title="Deutsch">🇩🇪</a>
+            <a href="/set_language/en" style="font-size: 16px; text-decoration: none; opacity: {% if settings.language == 'en' %}1{% else %}0.5{% endif %};" title="English">🇬🇧</a>
+        </div>
+    </h1>
+    
+    <div class="info">
+        <strong>Info:</strong> {{ t('info_text') }}
+    </div>
+    
+    {% if request.args.get('error') %}
+    <div class="error">
+        {% if request.args.get('error') == 'address_not_found' %}
+            Adresse nicht gefunden. Bitte versuchen Sie eine andere Adresse.
+        {% else %}
+            Fehler: {{ request.args.get('error') }}
+        {% endif %}
+    </div>
+    {% endif %}
+    
+    <form method="POST" action="/set_address">
+        <div class="form-group">
+            <label for="address">{{ t('address_berlin') }}:</label>
+            <input type="text" name="address" value="{{ settings.address }}" 
+                   placeholder="{{ t('address_placeholder') }}" 
+                   title="{{ t('address_tooltip') }}" required />
+        </div>
+        
+        <button type="submit" class="btn-primary">{{ t('continue_step2') }}</button>
+        
+        {% if settings.latitude and settings.longitude %}
+        <a href="/setup2" style="margin-left: 20px; color: #f0ca00;">{{ t('continue_step2') }}</a>
+        {% endif %}
+    </form>
+    
+
+    
+    <div class="info" style="margin-top: 30px;">
+        <strong>{{ t('how_it_works') }}</strong>
+        <ul>
+            {% for item in t('how_it_works_list') %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+
+</body>
+</html>

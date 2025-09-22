@@ -1,0 +1,15 @@
+[Unit]
+Description=Berlin Departure Board
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/departure-board
+Environment=PATH=/home/pi/departure-board/venv/bin
+ExecStart=/home/pi/departure-board/venv/bin/python nearby_departures.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

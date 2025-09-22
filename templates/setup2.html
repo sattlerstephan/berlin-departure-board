@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Schritt 2 - Nearby Departures</title>
+    <style>
+        body { 
+            font-family: 'JetBrains Mono', Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #000000;
+            color: #f0ca00;
+        }
+        
+        h1 {
+            background-color: #f0ca00;
+            color: #000000;
+            padding: 15px 20px;
+            margin: -20px -20px 20px -20px;
+            font-weight: 700;
+        }
+        
+        .form-group { 
+            margin: 15px 0; 
+        }
+        
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+        }
+        
+        input, select { 
+            padding: 8px; 
+            margin: 5px 0; 
+            background-color: #333333;
+            color: #f0ca00;
+            border: 1px solid #f0ca00;
+            width: 100%;
+            max-width: 300px;
+            box-sizing: border-box;
+        }
+        
+        @media (max-width: 768px) {
+            body { margin: 15px; font-size: 14px; }
+            h1 { font-size: 20px; padding: 12px 15px; margin: -15px -15px 20px -15px; }
+            input, select { max-width: 100%; }
+            .btn-primary, .btn-secondary { width: 100%; max-width: 250px; margin: 3px 0; }
+            .station-item { padding: 8px; }
+            .station-name { font-size: 14px; }
+            .station-details { font-size: 11px; }
+            .station-list { max-height: 300px; }
+        }
+        
+        @media (max-width: 480px) {
+            body { margin: 10px; font-size: 13px; }
+            h1 { font-size: 18px; padding: 10px 12px; margin: -10px -10px 15px -10px; }
+            .btn-secondary { font-size: 11px; padding: 6px 12px; }
+            .station-list { max-height: 250px; }
+        }
+        
+        .btn-primary { 
+            padding: 10px 20px; 
+            background: #f0ca00; 
+            color: #000000; 
+            border: none; 
+            cursor: pointer; 
+            font-weight: 700;
+            margin: 5px;
+        }
+        
+        .btn-primary:hover {
+            background: #d4b000;
+        }
+        
+        .btn-secondary {
+            padding: 8px 16px;
+            background: transparent;
+            color: #f0ca00;
+            border: 1px solid #f0ca00;
+            cursor: pointer;
+            font-weight: 400;
+            margin: 3px;
+            font-size: 12px;
+        }
+        
+        .btn-secondary:hover {
+            background: #f0ca00;
+            color: #000000;
+        }
+        
+        .info {
+            background-color: #111100;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #f0ca00;
+        }
+        
+        .station-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #f0ca00;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        
+        .station-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #333300;
+            margin: 5px 0;
+        }
+        
+        .station-item:hover {
+            background-color: #111100;
+        }
+        
+        .station-checkbox {
+            margin-right: 10px;
+        }
+        
+        .station-info {
+            flex-grow: 1;
+        }
+        
+        .station-name {
+            font-weight: bold;
+            color: #f0ca00;
+        }
+        
+        .station-details {
+            font-size: 12px;
+            color: #888888;
+        }
+    </style>
+</head>
+<body>
+    <h1>{{ t('step2_title') }} 
+        <div style="float: right; display: flex; gap: 5px;">
+            <a href="/set_language/de" style="font-size: 16px; text-decoration: none; opacity: {% if settings.language == 'de' %}1{% else %}0.5{% endif %};" title="Deutsch">🇩🇪</a>
+            <a href="/set_language/en" style="font-size: 16px; text-decoration: none; opacity: {% if settings.language == 'en' %}1{% else %}0.5{% endif %};" title="English">🇬🇧</a>
+        </div>
+    </h1>
+    
+    <div class="info">
+        <strong>{{ t('location') }}:</strong> {{ settings.address }}<br>
+        <a href="/setup" style="color: #f0ca00;">← {{ t('back_to_step1') }}</a>
+        {% if request.args.get('success') %}
+        <br><span style="color: #55a22a;">{{ t('params_saved') }}</span>
+        {% endif %}
+    </div>
+    
+    <!-- Parameters Form -->
+    <form method="POST" action="/update_location">
+        <h3>{{ t('set_parameters') }}</h3>
+        
+        <div class="form-group">
+            <label for="max_walk_minutes">{{ t('max_walk_time') }}:</label>
+            <input type="number" name="max_walk_minutes" value="{{ settings.max_walk_minutes }}" 
+                   min="1" max="20" title="{% if settings.language == 'de' %}Wie weit sind Sie bereit zu gehen?{% else %}How far are you willing to walk?{% endif %}" />
+        </div>
+        
+        <div class="form-group">
+            <label for="max_departures_per_station">{{ t('departures_per_station') }}:</label>
+            <input type="number" name="max_departures_per_station" value="{{ settings.max_departures_per_station }}" 
+                   min="1" max="20" />
+        </div>
+        
+        <div class="form-group">
+            <label for="min_minutes">{{ t('min_minutes_departure') }}:</label>
+            <input type="number" name="min_minutes" value="{{ settings.min_minutes }}" 
+                   min="0" max="30" />
+        </div>
+        
+        <div class="form-group">
+            <label for="max_minutes">{{ t('max_minutes_departure') }}:</label>
+            <input type="number" name="max_minutes" value="{{ settings.max_minutes }}" 
+                   min="5" max="120" />
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="show_platform" {% if settings.show_platform %}checked{% endif %} />
+                {{ t('show_platform_column') }}
+            </label>
+        </div>
+        
+        <input type="hidden" name="address" value="{{ settings.address }}" />
+        <button type="submit" class="btn-primary">{{ t('save_params') }}</button>
+    </form>
+    
+    <!-- Station Selection -->
+    <div class="info" style="margin-top: 30px;">
+        <h3>{{ t('select_stations') }}</h3>
+        <p>{{ t('select_stations_desc') }}</p>
+        
+        <div style="margin: 10px 0;">
+            <button type="button" class="btn-secondary" onclick="selectAllStations()">☑ {{ t('select_all') }}</button>
+            <button type="button" class="btn-secondary" onclick="selectNoneStations()">☐ {{ t('select_none') }}</button>
+            <button type="button" class="btn-secondary" onclick="selectCloseStations()">☑ {% if settings.language == 'de' %}Nahe (≤5 min){% else %}Close (≤5 min){% endif %}</button>
+            <button type="button" class="btn-primary" onclick="saveStations()">{{ t('save_stations') }}</button>
+        </div>
+        
+        <div id="station-list" class="station-list">
+            <p>{{ t('loading_stations') }}</p>
+        </div>
+    </div>
+    
+    <script>
+        let nearbyStations = [];
+        
+        // Load stations when page loads
+        window.onload = function() {
+            loadNearbyStations();
+        };
+        
+        function loadNearbyStations() {
+            fetch('/api/nearby_stations')
+                .then(response => response.json())
+                .then(stations => {
+                    nearbyStations = stations;
+                    displayStations(stations);
+                })
+                .catch(error => {
+                    document.getElementById('station-list').innerHTML = '<p>Fehler beim Laden der Stationen</p>';
+                });
+        }
+        
+        function displayStations(stations) {
+            const container = document.getElementById('station-list');
+            let html = '';
+            const selectedStations = {{ settings.selected_stations | tojson }};
+            
+            stations.forEach((station, index) => {
+                const checked = selectedStations.includes(station.id) ? 'checked' : '';
+                html += `
+                    <div class="station-item">
+                        <input type="checkbox" id="station_${index}" value="${station.id}" ${checked} class="station-checkbox">
+                        <label for="station_${index}" class="station-info">
+                            <div class="station-name">${station.name}</div>
+                            <div class="station-details">
+                                ${station.walk_time} {{ t('min') }} {{ t('walk_time') }}
+                            </div>
+                        </label>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html || '<p>Keine Stationen gefunden</p>';
+        }
+        
+        function selectAllStations() {
+            const checkboxes = document.querySelectorAll('#station-list input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = true);
+        }
+        
+        function selectNoneStations() {
+            const checkboxes = document.querySelectorAll('#station-list input[type="checkbox"]');
+            checkboxes.forEach(cb => cb.checked = false);
+        }
+        
+        function selectCloseStations() {
+            nearbyStations.forEach((station, index) => {
+                const checkbox = document.getElementById(`station_${index}`);
+                if (checkbox) {
+                    checkbox.checked = station.walk_time <= 5;
+                }
+            });
+        }
+        
+        function saveStations() {
+            const checkboxes = document.querySelectorAll('#station-list input[type="checkbox"]:checked');
+            const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+            
+            const formData = new FormData();
+            selectedIds.forEach(id => formData.append('selected_stations', id));
+            
+            fetch('/update_stations', {
+                method: 'POST',
+                body: formData
+            })
+            .then(() => {
+                window.location.href = '/';
+            })
+            .catch(error => {
+                alert('Fehler beim Speichern');
+            });
+        }
+    </script>
+</body>
+</html>
