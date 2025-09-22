@@ -216,14 +216,28 @@
         };
         
         function loadNearbyStations() {
+            document.getElementById('station-list').innerHTML = '<p>{{ t("loading_stations") }}</p>';
+            
             fetch('/api/nearby_stations')
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(stations => {
+                    console.log('Loaded stations:', stations.length);
                     nearbyStations = stations;
                     displayStations(stations);
                 })
                 .catch(error => {
-                    document.getElementById('station-list').innerHTML = '<p>Fehler beim Laden der Stationen</p>';
+                    console.error('Error loading stations:', error);
+                    const errorMsg = '{% if settings.language == "de" %}Fehler beim Laden der Stationen. Bitte versuchen Sie es später erneut.{% else %}Error loading stations. Please try again later.{% endif %}';
+                    const retryBtn = '{% if settings.language == "de" %}Erneut versuchen{% else %}Try Again{% endif %}';
+                    document.getElementById('station-list').innerHTML = 
+                        '<p style="color: #ff6666;">' + errorMsg + '</p>' +
+                        '<p style="color: #888888; font-size: 12px;">Error: ' + error.message + '</p>' +
+                        '<button class="btn-secondary" onclick="loadNearbyStations()" style="margin-top: 10px;">' + retryBtn + '</button>';
                 });
         }
         
@@ -240,7 +254,7 @@
                         <label for="station_${index}" class="station-info">
                             <div class="station-name">${station.name}</div>
                             <div class="station-details">
-                                ${station.walk_time} {{ t('min') }} {{ t('walk_time') }}
+                                ${station.walk_time} min walk time
                             </div>
                         </label>
                     </div>
