@@ -88,48 +88,6 @@
             opacity: 0.8;
         }
         
-        .destination-section {
-            margin-bottom: 20px;
-        }
-        
-        .destination-header {
-            background-color: var(--bg-tertiary);
-            color: var(--text-primary);
-            padding: 6px 16px;
-            font-weight: 700;
-            font-size: 14px;
-            border-left: 4px solid var(--accent);
-            margin-bottom: 0;
-            cursor: pointer;
-            user-select: none;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .destination-header:hover {
-            background-color: var(--bg-secondary);
-        }
-        
-        .collapse-icon {
-            font-size: 12px;
-            transition: transform 0.3s;
-        }
-        
-        .destination-section.collapsed .collapse-icon {
-            transform: rotate(-90deg);
-        }
-        
-        .destination-content {
-            transition: max-height 0.3s ease-out, opacity 0.3s;
-            overflow: hidden;
-        }
-        
-        .destination-section.collapsed .destination-content {
-            max-height: 0;
-            opacity: 0;
-        }
-        
         table { 
             border-collapse: collapse; 
             width: 100%;
@@ -403,7 +361,6 @@
             .control-link, .flag-link { font-size: 12px; }
             table { font-size: 11px; }
             th, td { padding: 4px 6px; }
-            .destination-header { font-size: 12px; padding: 4px 12px; }
             .filters { padding: 4px 8px; gap: 6px; }
             .filter-btn { font-size: 9px; padding: 1px 4px; }
         }
@@ -414,7 +371,6 @@
             table { font-size: 10px; }
             th, td { padding: 3px 4px; }
             .line-number { font-size: 9px; min-width: 20px; }
-            .destination-header { font-size: 11px; padding: 3px 8px; }
             .filters { padding: 3px 6px; gap: 4px; }
             .filter-btn { font-size: 8px; padding: 1px 3px; }
         }
@@ -445,53 +401,42 @@
             </div>
         </div>
         
-        {% for destination_area, departures in departures_by_destination.items() %}
-        <div class="destination-section" id="destination-{{ loop.index }}">
-            <div class="destination-header" onclick="toggleDestination({{ loop.index }})">
-                <div>{{ destination_area }}</div>
-                <span class="collapse-icon">▼</span>
-            </div>
-            
-            <div class="destination-content">
-                {% if departures %}
-                <table>
-                    <tr>
-                        <th>{{ t('station') }}</th>
-                        <th>{{ t('direction') }}</th>
-                        <th>{{ t('line') }}</th>
-                        <th>{{ t('next_departures') }}</th>
-                        {% if settings.show_platform %}<th>{{ t('platform') }}</th>{% endif %}
-                        <th>{{ t('leave_in') }}</th>
-                    </tr>
-                    {% for dep in departures %}
-                    <tr class="transport-{{ dep.line_type }}">
-                        <td><span class="station-name">{{ dep.station_name }}</span></td>
-                        <td>{{ dep.direction }}</td>
-                        <td><span class="line-number line-{{ dep.line_type }}">{{ dep.line }}</span></td>
-                        <td>
-                            <div>{{ dep.minutes }}{% if dep.delay %} <span class="delay-info">(+{{ dep.delay }}{{ t('min') }})</span>{% endif %}</div>
-                            {% if dep.next_times %}
-                            <div class="next-times">{{ dep.next_times }}</div>
-                            {% endif %}
-                        </td>
-                        {% if settings.show_platform %}<td>{{ dep.platform }}</td>{% endif %}
-                        <td class="urgency-{{ dep.urgency }}{% if dep.delay %} delayed{% endif %}">
-                            {% if dep.urgency == 'now' %}
-                                <span class="blink-red"></span>
-                            {% elif dep.urgency == 'soon' %}
-                                <span class="blink-orange"></span>
-                            {% endif %}
-                            {{ dep.leave_time }}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </table>
-                {% else %}
-                <div class="no-departures">{{ t('no_departures_available') }}</div>
-                {% endif %}
-            </div>
-        </div>
-        {% endfor %}
+        {% if departures %}
+        <table>
+            <tr>
+                <th>{{ t('station') }}</th>
+                <th>{{ t('direction') }}</th>
+                <th>{{ t('line') }}</th>
+                <th>{{ t('next_departures') }}</th>
+                {% if settings.show_platform %}<th>{{ t('platform') }}</th>{% endif %}
+                <th>{{ t('leave_in') }}</th>
+            </tr>
+            {% for dep in departures %}
+            <tr class="transport-{{ dep.line_type }}">
+                <td><span class="station-name">{{ dep.station_name }}</span></td>
+                <td>{{ dep.direction }}</td>
+                <td><span class="line-number line-{{ dep.line_type }}">{{ dep.line }}</span></td>
+                <td>
+                    <div>{{ dep.minutes }}{% if dep.delay %} <span class="delay-info">(+{{ dep.delay }}{{ t('min') }})</span>{% endif %}</div>
+                    {% if dep.next_times %}
+                    <div class="next-times">{{ dep.next_times }}</div>
+                    {% endif %}
+                </td>
+                {% if settings.show_platform %}<td>{{ dep.platform }}</td>{% endif %}
+                <td class="urgency-{{ dep.urgency }}{% if dep.delay %} delayed{% endif %}">
+                    {% if dep.urgency == 'now' %}
+                        <span class="blink-red"></span>
+                    {% elif dep.urgency == 'soon' %}
+                        <span class="blink-orange"></span>
+                    {% endif %}
+                    {{ dep.leave_time }}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
+        <div class="no-departures">{{ t('no_departures_available') }}</div>
+        {% endif %}
         
         <div class="bvg-footer">
             {{ t('next_update') }} <span id="countdown">30</span> {{ t('seconds') }}
@@ -520,16 +465,6 @@
             localStorage.setItem('theme', newTheme);
         }
         
-        function toggleDestination(index) {
-            const destination = document.getElementById(`destination-${index}`);
-            destination.classList.toggle('collapsed');
-            
-            const collapsed = JSON.parse(localStorage.getItem('collapsedDestinations') || '{}');
-            const destinationName = destination.querySelector('.destination-header div').textContent.trim();
-            collapsed[destinationName] = destination.classList.contains('collapsed');
-            localStorage.setItem('collapsedDestinations', JSON.stringify(collapsed));
-        }
-        
         function toggleFilter(type) {
             const btn = document.querySelector(`[data-type="${type}"]`);
             if (activeFilters.has(type)) {
@@ -555,15 +490,6 @@
             // Load theme
             const savedTheme = localStorage.getItem('theme') || 'dark';
             document.body.setAttribute('data-theme', savedTheme);
-            
-            // Load collapsed states
-            const collapsed = JSON.parse(localStorage.getItem('collapsedDestinations') || '{}');
-            document.querySelectorAll('.destination-section').forEach(destination => {
-                const destinationName = destination.querySelector('.destination-header div').textContent.trim();
-                if (collapsed[destinationName]) {
-                    destination.classList.add('collapsed');
-                }
-            });
             
             // Load filters
             const savedFilters = JSON.parse(localStorage.getItem('activeFilters') || '["s","u","tram","bus","regional"]');

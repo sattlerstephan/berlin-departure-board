@@ -267,46 +267,17 @@ def get_station_departures(station_id, limit=30):
         pass
         return []
 
-def group_by_direction_area(direction):
-    """Group directions by area for better organization"""
-    direction = direction.lower()
-    
-    # Central areas
-    if any(area in direction for area in ['mitte', 'alexanderplatz', 'potsdamer platz', 'friedrichstr']):
-        return 'Berlin Mitte'
-    
-    # West
-    if any(area in direction for area in ['charlottenburg', 'wilmersdorf', 'schöneberg', 'steglitz', 'zehlendorf', 'spandau']):
-        return 'West Berlin'
-    
-    # East
-    if any(area in direction for area in ['friedrichshain', 'kreuzberg', 'prenzlauer berg', 'lichtenberg', 'marzahn', 'hellersdorf']):
-        return 'East Berlin'
-    
-    # North
-    if any(area in direction for area in ['wedding', 'reinickendorf', 'pankow', 'weißensee']):
-        return 'North Berlin'
-    
-    # South
-    if any(area in direction for area in ['tempelhof', 'neukölln', 'treptow', 'köpenick']):
-        return 'South Berlin'
-    
-    # Brandenburg/Outskirts
-    if any(area in direction for area in ['potsdam', 'oranienburg', 'strausberg', 'königs wusterhausen', 'flughafen']):
-        return 'Brandenburg'
-    
-    return 'Other Destinations'
 
 @app.route('/')
 def index():
-    """Main departure board grouped by destination areas"""
+    """Main departure board with simple flat list"""
     if not settings['latitude'] or not settings['longitude']:
         return redirect(url_for('setup'))
     
     try:
         search_radius = settings['max_walk_minutes'] * 80
         stations = find_nearby_stations(settings['latitude'], settings['longitude'], search_radius)
-        departures_by_destination = defaultdict(list)
+        all_departures = []
         
         for station in stations:
             if not isinstance(station, dict) or 'id' not in station:
@@ -394,9 +365,7 @@ def index():
                         if len(next_deps) > 1:
                             next_times = ", ".join([f"{dep['minutes_until']}{t('min')}" for dep in next_deps[1:]])
                         
-                        direction_area = group_by_direction_area(direction)
-                        
-                        departures_by_destination[direction_area].append({
+                        all_departures.append({
                             'station_name': station['name'],
                             'line': line_name,
                             'line_type': get_line_type(line_name, first_dep['line_product']),
@@ -410,15 +379,11 @@ def index():
                             'delay': first_dep['delay'] if first_dep['delay'] > 0 else None
                         })
         
-        # Sort departures within each destination group by leave time
-        for destination_area in departures_by_destination:
-            departures_by_destination[destination_area].sort(key=lambda x: x['leave_in_minutes'] if x['leave_in_minutes'] > 0 else -1)
-        
-        # Sort destination areas
-        sorted_destinations = dict(sorted(departures_by_destination.items()))
+        # Sort all departures by urgency (most urgent first)
+        all_departures.sort(key=lambda x: x['leave_in_minutes'] if x['leave_in_minutes'] > 0 else -1)
         
         return render_template('nearby_departures.html', 
-                             departures_by_destination=sorted_destinations, 
+                             departures=all_departures, 
                              settings=settings, t=t)
         
     except Exception as e:
